@@ -9,7 +9,7 @@ import net.fabricmc.fabric.api.event.EventFactory;
 import net.minecraft.world.InteractionResult;
 import org.jspecify.annotations.Nullable;
 
-import java.lang.invoke.MethodHandles;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
@@ -177,6 +177,11 @@ public final class FabricEventFactory {
     }
 
     private static Object invokeFast(Object object, Method method, Object[] args) throws Throwable {
-        return MethodHandles.lookup().unreflect(method).bindTo(object).invokeWithArguments(args);
+        // Reuse reflection's cached accessor instead of rebuilding a method-handle adapter on every callback.
+        try {
+            return method.invoke(object, args);
+        } catch (InvocationTargetException exception) {
+            throw exception.getCause();
+        }
     }
 }
